@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<title></title>
+	<meta charset="UTF-8">
+	<!--[if lt ie 9]>
+		<script src="js/lib/html5.min.js"></script> 
+	<![endif]-->
+	<style type="text/css">
+		.canvas_box{
+			float: left;
+			margin-left: 10px;
+		}
+		.canvas_box canvas{
+			margin: 0 0 5px 0;
+			box-shadow: 0 0 3px rgba(0, 0, 0, 0.2);
+			font-size: 0;
+			display: block;
+		}
+
+		.img_box img{
+			display: block;
+		}
+		label{
+			display: inline-block;
+			width: 130px;
+			text-align: right;
+		}
+
+		[v-cloak]{
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+		<div class="">
+			<input v-on:change="fileChange($event)" type="file" multiple="multiple">
+			<div>
+				<label>哪种方式：</label>
+				<select v-model="way">
+					<option value="1">以份数</option>
+					<option value="2">以高度</option>
+				</select>
+			</div>
+			
+			<div v-if="way == '1'">
+				<label>以份数：</label>
+				<input v-model.number="count" type="text" value="3">
+			</div>
+
+			<div v-if="way == '2'">
+				<label>以高度：</label>
+				<input v-model.number="height" type="text" value="">
+				<span>{{  }}</span>
+			</div>
+
+			<div>
+				<label>图片质量0-1：</label>
+				<input v-model.trim="quality" type="text">
+			</div>
+
+			<button v-on:click="clip">开始裁剪</button>
+		</div>
+
+		<div style="min-width: 3600px;">
+			<div style="float: left;">
+				<canvas id="c1"></canvas>
+			</div>
+			<div class="img_box" style="font-size: 0; float: left;"></div>
+			<div class="canvas_box"></div>
+		</div>
+	</div>
+	
+	<script src="/js/lib/require.js"></script>
+	<script>
+		require(['js/config'], function() {
+			require(['vue'], function(Vue) {
+				var app = new Vue({
+					el: '#app',
+					data (){
+						return {
+							file: '',
+							img: new Image(),
+							canvas: null,
+							cxt: null,
+							count: '3', // 多少份
+							height: '200', // 以高度
+							quality: '',
+							way: '1', // 1-以份数 2-以高度
+							canvasBox: null, // 剪切后生成的canvas
+							imgBox: null  // 剪切后生成的图片
+						}
+					},
+					methods: {
+						fileChange (e) {
+							let files = e.target.files;
+							let url = window.URL.createObjectURL(files[0]);
+							this.img.src = url;
+
+							let count = (this.count === '') ? 1 : this.count;
+							// if (count > 1) {
+							// 	let height = parseInt((this.canvas.height - (this.canvas.height % count)) / count);
+							// 	for (let i = 0; i < count; i++) {
+							// 		if (i > 0) {
+										
+							// 		}
+							// 	}
+							// }
+
+							/* let reader = new FileReader();
+							reader.readAsDataURL(file.files[0]);// 发起异步请求
+							reader.onload = function(){
+								// 读取完成后，数据保存在对象的result属性中
+								console.log(this.result)
+							}
+							let count = 0;
+
+							reader.onprogress = function(){
+								count++;
+								console.log("加载中" + count);
+							} */
+						},
+						clip () {
+							// if (file.files.length == 0) {
+							// 	alert('请选张图片');
+							// 	return;
+							// }
+							let canvasDocFragment = document.createDocumentFragment();
+							let imgDocFragment = document.createDocumentFragment();
+
+							let height = null, count = null;
+
+							if (this.way === '1') { // 以份数
+								count = (this.count === '') ? 1 : this.count;
+								height = parseInt((this.canvas.height - (this.canvas.height % count)) / count);
+							} else if (this.way === '2') { // 以高度
+								count = (this.canvas.height % this.height > 0)
+									? parseInt(this.canvas.height / this.height) + 1
+									: parseInt(this.canvas.height / this.height);
+								height = this.height;
+							}
+
+							this.canvasBox.innerHTML = '';
+							this.imgBox.innerHTML = '';
+
+							for (let i = 0; i < count; i++) {
+								let canvas = document.createElement('canvas');
+								let sy = i * height;
+								// 判断是否最后一个
+								if (i === count - 1){
+									height = (this.way === '1')
+										? height + (this.canvas.height % count) // 为份数
+										: (this.canvas.height % this.height === 0) ? height : this.canvas.height % this.height; // 为高度
+								}
+
+								canvas.width = this.canvas.width;
+								canvas.height = height;
+								let cxt = canvas.getContext('2d');
+								// 返回一个ImageData对象，用来描述canvas区域隐含的像素数据
+								let dataImg = this.cxt.getImageData(0, sy, canvas.width, height);
+								// 然后通过 putImageData 将图像数据放回画布
+								cxt.putImageData(dataImg, 0, 0, 0, 0, canvas.width, height);
+
+								canvasDocFragment.appendChild(canvas);
+								imgDocFragment.appendChild(new Image());
+							}
+							this.canvasBox.appendChild(canvasDocFragment);
+							this.imgBox.appendChild(imgDocFragment);
+							this.canvasToBlob();
+						},
+						canvasToBlob () {
+							let len = this.canvasBox.getElementsByTagName('canvas').length;
+							let quality = (this.quality === '') ? 1 : parseFloat(this.quality);
+							let promiseArr = [];
+							for (let i = 0; i < len; i++) {
+								promiseArr.push(new Promise((resolve, reject) => {
+									// canvas转换成base64
+									// let base64 = canvas2.toDataURL("image/jpeg", 1);
+									this.canvasBox.getElementsByTagName('canvas')[i].toBlob((blob) => {
+										let data = URL.createObjectURL(blob);
+										this.imgBox.getElementsByTagName('img')[i].src = data;
+										// console.log(i);
+										resolve();
+									}, 'image/jpeg', quality);
+								}));
+							}
+
+							Promise.all(promiseArr).then(() => {
+								console.log('裁剪完成');
+							});
+						}
+					},
+					created () {
+						this.img.onload = () => {
+							this.canvas.height = this.img.height;
+							this.canvas.width = this.img.width;
+							this.cxt.drawImage(this.img, 0, 0, this.canvas.width, this.canvas.height);
+						}
+					},
+					mounted () {
+						this.canvas = document.getElementById('c1');
+						this.cxt = this.canvas.getContext('2d');
+						this.canvasBox = document.querySelector('.canvas_box');
+						this.imgBox = document.querySelector('.img_box');
+						this.img.src = './images/01.jpg';
+					}
+				});
+			});
+		});
+	</script>
+</body>
+
+</html>
