@@ -36,8 +36,8 @@
 
 <body>
 	<div id="app" v-cloak>
+		<input v-on:change="fileChange($event)" type="file" multiple="multiple">
 		<div class="">
-			<input v-on:change="fileChange($event)" type="file" multiple="multiple">
 			<div>
 				<label>哪种方式：</label>
 				<select v-model="way">
@@ -53,12 +53,12 @@
 
 			<div v-if="way == '2'">
 				<label>以高度：</label>
-				<input v-model.number="height" type="text" value="">
+				<input v-model.number="clipHeight" type="text" value="">
 				<span>{{  }}</span>
 			</div>
 
 			<div>
-				<label>图片质量0-1：</label>
+				<label>图片质量0~1：</label>
 				<input v-model.trim="quality" type="text">
 			</div>
 
@@ -76,20 +76,20 @@
 	
 	<script src="/js/lib/require.js"></script>
 	<script>
-		require(['js/config'], function() {
-			require(['vue'], function(Vue) {
+		require(['js/config'], function () {
+			require(['vue'], function (Vue) {
 				var app = new Vue({
 					el: '#app',
-					data (){
+					data () {
 						return {
 							file: '',
 							img: new Image(),
 							canvas: null,
 							cxt: null,
 							count: '3', // 多少份
-							height: '200', // 以高度
+							clipHeight: '200', // 以高度
 							quality: '',
-							way: '1', // 1-以份数 2-以高度
+							way: '1', // 1 以份数 2 以高度
 							canvasBox: null, // 剪切后生成的canvas
 							imgBox: null  // 剪切后生成的图片
 						}
@@ -137,10 +137,10 @@
 								count = (this.count === '') ? 1 : this.count;
 								height = parseInt((this.canvas.height - (this.canvas.height % count)) / count);
 							} else if (this.way === '2') { // 以高度
-								count = (this.canvas.height % this.height > 0)
-									? parseInt(this.canvas.height / this.height) + 1
-									: parseInt(this.canvas.height / this.height);
-								height = this.height;
+								count = (this.canvas.height % this.clipHeight > 0)
+									? parseInt(this.canvas.height / this.clipHeight) + 1
+									: parseInt(this.canvas.height / this.clipHeight);
+								height = this.clipHeight;
 							}
 
 							this.canvasBox.innerHTML = '';
@@ -153,7 +153,7 @@
 								if (i === count - 1){
 									height = (this.way === '1')
 										? height + (this.canvas.height % count) // 为份数
-										: (this.canvas.height % this.height === 0) ? height : this.canvas.height % this.height; // 为高度
+										: (this.canvas.height % this.clipHeight === 0) ? height : this.canvas.height % this.clipHeight; // 为高度
 								}
 
 								canvas.width = this.canvas.width;
