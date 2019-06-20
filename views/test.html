@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<title></title>
+	<meta charset="UTF-8">
+	<!--[if lt ie 9]>
+		<script src="js/lib/html5.min.js"></script> 
+	<![endif]-->
+	<style type="text/css">
+		[v-cloak]{
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="app" v-cloak>
+		<span v-on:click="test">测试2</span>
+	</div>
+	
+	<script src="/js/lib/require.js"></script>
+	<script>
+		require(['js/config'], function () {
+			require(['vue', 'jquery'], function (Vue, $) {
+				var app = new Vue({
+					el: '#app',
+					data () {
+						return {
+						}
+					},
+					methods: {
+						test () {
+							$.ajax({
+								type: 'post',
+								url: 'http://localhost:3000/test2',
+								dataType: 'json',
+								data: {a: 1},
+								success: (data) => {
+									console.log(data);
+								}
+							});
+
+
+							/*let formData = new FormData();
+							formData.append('file', this.imgFileArr[0]);
+							let request = this.getXMLHttpRequest();
+							request.open('post', 'http://localhost:3000/test2');
+							// request.setRequestHeader('Content-type', 'multipart/form-data');
+							request.setRequestHeader('Content-type', 'multipart/x-www-form-urlencoded');
+							request.onreadystatechange = function () {
+								if (request.readyState == 4 && request.status == 200) {
+									let res = JSON.parse(request.responseText);
+									if (res.error == 0) {
+										console.log(11);
+									} else {
+										// console.log(22);
+									}
+								}
+							}
+							request.send('foo=bar&lorem=ipsum');*/
+						},
+						getXMLHttpRequest () {
+							let xhr;
+							if (window.ActiveXObject) {
+								xhr = new ActiveXObject("Microsoft.XMLHTTP")
+							} else if (window.XMLHttpRequest) {
+								xhr = new XMLHttpRequest();
+							}
+							return xhr;
+						}
+					},
+					created () {
+					},
+					mounted () {
+					}
+				});
+			});
+		});
+	</script>
+</body>
+
+</html>

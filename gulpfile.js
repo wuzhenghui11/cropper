@@ -8,9 +8,10 @@ const nodemon = require('gulp-nodemon');
 const yargs = require('yargs').argv;
 const livereload = require('gulp-livereload');
 const connect = require('gulp-connect');
-// const proxy = require('http-proxy-middleare');
 const opn = require('opn');
 const os = require('os');
+const childProcess = require('child_process');
+const { exec } = childProcess;
 
 let config = {
 	port: 3002,
@@ -30,12 +31,12 @@ let getIPAddress = () => {
 		for(let l = 0; l  < iface.length; l++){
 			let alias = iface[l];
 			if(alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal){
+				console.log('server running at http://' + alias.address + ':' + config.port + ' ---gulp-connect');
 				return alias.address;
 			}
 		}
 	}
 }
-console.log('server running at http://' + getIPAddress() + ':' + config.port + ' ---gulp-connect');
 
 gulp.task('connect', (done) => {
 	connect.server({
@@ -47,6 +48,22 @@ gulp.task('connect', (done) => {
 	});
 	done();
 });
+
+
+// -----
+var runExpress = () => {
+	let cp = exec('node ./bin/www', function(error, stdout, stderr){
+		if(error) {
+			console.error('error: ' + error);
+			return;
+		}
+		console.log('stdout: ' + stdout);
+	})
+	cp.on('exit', function (code, signal) { 
+		console.log('子进程已退出，代码：' + code); 
+	});
+}
+
 
 gulp.task('jsmin', (done) => {
 	gulp.src(['./static/js/app/*.js'])
@@ -89,16 +106,16 @@ gulp.task('watch', (done) => {
 });
 
 gulp.task('express', (done) => {
-	// nodemon({
-	// 	script: './bin/www'
-	// })
+	nodemon({
+		script: './bin/www'
+	});
 	done();
 });
 
-gulp.task('server', gulp.series('watch', 'connect', 'express', function(done){
+gulp.task('server', gulp.series('watch', 'connect', (done) => {
 	getIPAddress();
-	opn('http://localhost:' + config.port);
-	done()
+	// opn('http://localhost:' + config.port);
+	done();
 }));
 
 

@@ -2,7 +2,8 @@ require.config({
 	baseUrl: 'js/lib', // 根目录
 	paths:{
 		vue: 'vue',
-		vuex: 'vuex'
+		vuex: 'vuex',
+		jquery: 'jquery'
 	},
 	shim:{
 		'vue': {

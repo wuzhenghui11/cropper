@@ -6,26 +6,30 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var ejs = require('ejs');
 var os = require('os');
+var multer = require('multer');
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
 
+const childProcess = require('child_process');
+const { exec } = childProcess;
+
 //获得电脑IP地址
-var getIPAddress = function(){
-  var interfaces = os.networkInterfaces();
-  for(var i in interfaces){
-    var iface =interfaces[i];
-    for(var l = 0; l  < iface.length; l++){
-      var alias = iface[l];
-      if(alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal){
-        return alias.address;
-      }
-    }
-  }
+var getIPAddress = function () {
+	var interfaces = os.networkInterfaces();
+	for (var i in interfaces) {
+		var iface = interfaces[i];
+		for (var l = 0; l < iface.length; l++) {
+			var alias = iface[l];
+			if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+				return alias.address;
+			}
+		}
+	}
 }
-console.log("server running at http://" + getIPAddress() + ":3000 ---express" );
+console.log("server running at http://" + getIPAddress() + ":3000 ---express");
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -42,17 +46,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'static')));
+app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'views')));
 
 app.use('/', routes);
 app.use('/users', users);
-app.use('/getData', routes);
+
+/* -- */
+var upload = multer({ dest: './dist/images'});
+
+app.post('photos/upload2', upload.array('photos', 12), (req, res, next) => {
+
+});
+
+/* -- */
 
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+app.use(function (req, res, next) {
+	var err = new Error('Not Found');
+	err.status = 404;
+	next(err);
 });
 
 // error handlers
@@ -60,24 +74,36 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('error', {
-      message: err.message,
-      error: err
-    });
-  });
+	app.use(function (err, req, res, next) {
+		res.status(err.status || 500);
+		res.render('error', {
+			message: err.message,
+			error: err
+		});
+	});
 }
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('error', {
-    message: err.message,
-    error: {}
-  });
+app.use(function (err, req, res, next) {
+	res.status(err.status || 500);
+	res.render('error', {
+		message: err.message,
+		error: {}
+	});
 });
 
-
+var runExpress = () => {
+	let cp = exec('gulp server', function(error, stdout, stderr){
+	    if(error) {
+	        console.error('error: ' + error);
+	        return;
+	    }
+	    console.log('stdout: ' + stdout);
+	});
+	cp.on('exit', function (code, signal) { 
+		console.log('子进程已退出，代码：' + code); 
+	});
+}
+runExpress();
 module.exports = app;

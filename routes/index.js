@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var multer = require('multer');
 
 /* GET home page. */
 router.get('/getData', (req, res, next) => {
@@ -35,9 +36,34 @@ router.get('/getData', (req, res, next) => {
   });
 });
 
+var storage = multer.diskStorage({
+	destination: function (req, file, cb) {
+		cb(null, '/dist/images');
+	},
+	filename: function (req, file, cb) {
+		cb(null, file.fieldname + '-' + Date.now());
+	}
+});
+
+var upload = multer({
+	storage: storage,
+	limits: {
+		
+	}
+});
+
+router.post('/photos/upload'/*, upload.array('photos', 12)*/, (req, res, next) => {
+    console.log(req);
+});
+
 
 router.get('/', (req, res, next) => {
 	res.render('index', { title: 'Express', name: 'test'});
+});
+
+router.post('/test2', (req, res, next) => {
+    console.log(req);
+    res.send('123');
 });
 
 module.exports = router;

@@ -8,6 +8,12 @@
 		<script src="js/lib/html5.min.js"></script> 
 	<![endif]-->
 	<style type="text/css">
+		body{
+			background-color: orange;
+		}
+		div{
+			margin-bottom: 10px;
+		}
 		.canvas_box{
 			float: left;
 			margin-left: 10px;
@@ -36,7 +42,9 @@
 
 <body>
 	<div id="app" v-cloak>
-		<input v-on:change="fileChange($event)" type="file" multiple="multiple">
+		<div>
+			<input v-on:change="fileChange($event)" type="file" multiple="multiple">
+		</div>
 		<div class="">
 			<div>
 				<label>哪种方式：</label>
@@ -60,9 +68,19 @@
 			<div>
 				<label>图片质量0~1：</label>
 				<input v-model.trim="quality" type="text">
+
+				<label>图片格式：</label>
+				<select v-model="imgType">
+					<option value="image/jpeg">image/jpeg</option>
+					<!-- <option value="image/jpeg">image/webp</option> -->
+					<option value="image/png">image/png</option>
+				</select>
+				<span>--格式为png质量无效</span>
+				<!-- 当请求图片格式为image/jpeg或者image/webp时用来指定图片展示质量 -->
 			</div>
 
 			<button v-on:click="clip">开始裁剪</button>
+			<button v-on:click="upload">生成图片到本地img文件夹下</button>
 		</div>
 
 		<div style="min-width: 3600px;">
@@ -88,10 +106,12 @@
 							cxt: null,
 							count: '3', // 多少份
 							clipHeight: '200', // 以高度
-							quality: '',
+							quality: '', // 图片质量
+							imgType: 'image/jpeg',
 							way: '1', // 1 以份数 2 以高度
 							canvasBox: null, // 剪切后生成的canvas
-							imgBox: null  // 剪切后生成的图片
+							imgBox: null,  // 剪切后生成的图片
+							imgFileArr: []
 						}
 					},
 					methods: {
@@ -101,15 +121,6 @@
 							this.img.src = url;
 
 							let count = (this.count === '') ? 1 : this.count;
-							// if (count > 1) {
-							// 	let height = parseInt((this.canvas.height - (this.canvas.height % count)) / count);
-							// 	for (let i = 0; i < count; i++) {
-							// 		if (i > 0) {
-										
-							// 		}
-							// 	}
-							// }
-
 							/* let reader = new FileReader();
 							reader.readAsDataURL(file.files[0]);// 发起异步请求
 							reader.onload = function(){
@@ -124,10 +135,6 @@
 							} */
 						},
 						clip () {
-							// if (file.files.length == 0) {
-							// 	alert('请选张图片');
-							// 	return;
-							// }
 							let canvasDocFragment = document.createDocumentFragment();
 							let imgDocFragment = document.createDocumentFragment();
 
@@ -180,17 +187,48 @@
 									// canvas转换成base64
 									// let base64 = canvas2.toDataURL("image/jpeg", 1);
 									this.canvasBox.getElementsByTagName('canvas')[i].toBlob((blob) => {
+										blob.name = 'test'
+										this.imgFileArr.push(blob);
 										let data = URL.createObjectURL(blob);
 										this.imgBox.getElementsByTagName('img')[i].src = data;
-										// console.log(i);
 										resolve();
-									}, 'image/jpeg', quality);
+									}, this.imgType, quality);
 								}));
 							}
-
 							Promise.all(promiseArr).then(() => {
 								console.log('裁剪完成');
+								console.log(this.imgFileArr);
 							});
+						},
+						upload () {
+							console.log(this.imgFileArr[0]);
+							let formData = new FormData();
+							let request = this.getXMLHttpRequest();
+							// for (let i = 0; i < this.imgFileArr.length; i++) {
+							// 	formData.append('file', this.imgFileArr[i]);
+							// }
+							formData.append('file', this.imgFileArr[0]);
+							request.open('POST', 'http://localhost:3000/photos/upload2');
+							request.setRequestHeader('Content-type', 'multipart/x-www-form-urlencoded');
+							request.send(formData);
+							request.onreadystatechange = function () {
+								if (request.readyState == 4 && request.status == 200) {
+									let res = JSON.parse(request.responseText);
+									if (res.error == 0) {
+										that.photoUrl = window.URL.createObjectURL(data);
+									} else {
+									}
+								}
+							}
+						},
+						getXMLHttpRequest () {
+							let xhr;
+							if (window.ActiveXObject) {
+								xhr = new ActiveXObject("Microsoft.XMLHTTP")
+							} else if (window.XMLHttpRequest) {
+								xhr = new XMLHttpRequest();
+							}
+							return xhr;
 						}
 					},
 					created () {
